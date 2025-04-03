@@ -1,6 +1,6 @@
 {
   "name": "electron-template",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "main": "main.js",
   "scripts": {
     "ng": "ng",
@@ -55,13 +55,13 @@
       "main.js",
       "package.json"
     ],
-    "win": {
-      "target": "nsis"
+    "mac": {
+      "target": ["zip"]
     },
     "publish": [
       {
         "provider": "generic",
-        "url": "https://electron-template.surge.sh/"
+        "url": "https://electron-template1.surge.sh/"
       }
     ]
   }

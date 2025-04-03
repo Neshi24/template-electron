@@ -27,13 +27,43 @@ function createMainWindow() {
     show: true,
     webPreferences: {
       nodeIntegration: true,
+      contextIsolation: false,
     },
   });
 
   mainWindow.setMenu(null);
 
-  // Load splash screen
+  // Optional: load a placeholder HTML (like a black screen)
   mainWindow.loadURL(
+    url.format({
+      pathname: path.join(__dirname, 'blank.html'),
+      protocol: 'file:',
+      slashes: true,
+    })
+  );
+
+  mainWindow.on('closed', function () {
+    mainWindow = null;
+  });
+}
+
+function createSplashWindow() {
+  splashWindow = new BrowserWindow({
+    width: 400,
+    height: 250,
+    parent: mainWindow,
+    modal: true,
+    resizable: false,
+    frame: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+  });
+
+  splashWindow.setMenu(null);
+
+  splashWindow.loadURL(
     url.format({
       pathname: path.join(__dirname, 'splash.html'),
       protocol: 'file:',
@@ -41,25 +71,37 @@ function createMainWindow() {
     })
   );
 
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    const child = new BrowserWindow({
-      parent: mainWindow,
-      modal: false,
-      show: true,
-      webPreferences: {
-        nodeIntegration: true,
-      },
-    });
-
-    child.setMenu(null);
-    child.loadURL(url);
-    return { action: 'deny' };
+  splashWindow.on('closed', function () {
+    splashWindow = null;
   });
+}
+
+function createMainAppWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1000,
+    height: 800,
+    show: true,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+    },
+  });
+
+  mainWindow.setMenu(null);
+
+  mainWindow.loadURL(
+    url.format({
+      pathname: path.join(__dirname, 'dist/electron-template/browser/index.html'),
+      protocol: 'file:',
+      slashes: true,
+    })
+  );
 
   mainWindow.on('closed', function () {
     mainWindow = null;
   });
 }
+
 
 // Create the login window
 function showLoginWindow() {
@@ -93,12 +135,15 @@ function showLoginWindow() {
 // Check login status and load login or main app
 function checkLoginAndShowWindow() {
   console.log('checkLoginAndShowWindow triggered');
-  const isLoggedIn = false; // TODO
+  const isLoggedIn = false; // TODO: Your login check
+
+  if (splashWindow) splashWindow.close();
+
   if (!isLoggedIn) {
     console.log('Not logged in, showing login modal...');
     showLoginWindow();
   } else {
-    console.log('Already logged in, loading main app...');
+    console.log('Already logged in, loading app...');
     mainWindow.loadURL(
       url.format({
         pathname: path.join(__dirname, 'dist/electron-template/browser/index.html'),
@@ -109,11 +154,11 @@ function checkLoginAndShowWindow() {
   }
 }
 
+
+
 // Handle login success
 ipcMain.on('login-success', () => {
-  if (loginWindow) {
-    loginWindow.close();
-  }
+  if (loginWindow) loginWindow.close();
 
   mainWindow.loadURL(
     url.format({
@@ -123,6 +168,7 @@ ipcMain.on('login-success', () => {
     })
   );
 });
+
 
 // Auto-updater events
 autoUpdater.on('checking-for-update', () => {
@@ -181,16 +227,21 @@ autoUpdater.on('update-downloaded', (info) => {
 // App ready
 app.on('ready', () => {
   createMainWindow();
+  createSplashWindow();
+
   autoUpdater.checkForUpdatesAndNotify();
 
+  // Fallback in case updater hangs
   setTimeout(() => {
-    if (!loginWindow) {
-      console.log('Fallback: update check timeout, showing login window.');
-      broadcastUpdateStatus('Update check timeout. Proceeding to login...');
+    if (splashWindow) {
+      broadcastUpdateStatus('Update timeout. Proceeding...');
+      splashWindow.close();
       checkLoginAndShowWindow();
     }
   }, 5000);
 });
+
+
 
 app.on('activate', () => {
   if (mainWindow === null) {
