@@ -1,40 +1,35 @@
-const { app, BrowserWindow, dialog } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const url = require('url');
 const path = require('path');
 
 let mainWindow;
-autoUpdater.logger = require("electron-log");
-autoUpdater.logger.transports.file.level = "debug";
+let loginWindow;
 
-function createWindow () {
+autoUpdater.logger = require('electron-log');
+autoUpdater.logger.transports.file.level = 'debug';
+
+//Create the main window
+function createMainWindow() {
   mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
+    width: 1000,
+    height: 800,
+    show: true,
     webPreferences: {
-      nodeIntegration: true
-    }
+      nodeIntegration: true,
+    },
   });
 
   mainWindow.setMenu(null);
 
+  //show a blank splash page
   mainWindow.loadURL(
     url.format({
-      pathname: path.join(__dirname, 'dist/electron-template/browser/index.html'),
+      pathname: path.join(__dirname, 'splash.html'),
       protocol: 'file:',
-      slashes: true
+      slashes: true,
     })
   );
-
-
-  const { ipcMain } = require('electron');
-
-  ipcMain.on('login-success', () => {
-    mainWindow.loadURL(
-      this.router.navigate(['/main'])
-  );
-  });
-
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     const child = new BrowserWindow({
@@ -42,8 +37,8 @@ function createWindow () {
       modal: false,
       show: true,
       webPreferences: {
-        nodeIntegration: true
-      }
+        nodeIntegration: true,
+      },
     });
 
     child.setMenu(null);
@@ -56,21 +51,67 @@ function createWindow () {
   });
 }
 
-// Auto-updater event listeners
+// Create the login window
+function showLoginWindow() {
+  loginWindow = new BrowserWindow({
+    width: 400,
+    height: 300,
+    parent: mainWindow,
+    modal: true,
+    resizable: false,
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false
+    }
+  });
+
+
+  loginWindow.setMenu(null);
+
+  loginWindow.loadURL(
+    url.format({
+      pathname: path.join(__dirname, 'dist/electron-template/browser/login.html'),
+      protocol: 'file:',
+      slashes: true,
+    })
+  );
+
+  loginWindow.on('closed', () => {
+    loginWindow = null;
+  });
+}
+
+//On login success — close login modal, load Angular app
+ipcMain.on('login-success', () => {
+  if (loginWindow) {
+    loginWindow.close();
+  }
+
+  // Now load the Angular app into the main window
+  mainWindow.loadURL(
+    url.format({
+      pathname: path.join(__dirname, 'dist/electron-template/browser/index.html'),
+      protocol: 'file:',
+      slashes: true
+    })
+  );
+
+});
+
+//Auto-updater hooks
 autoUpdater.on('checking-for-update', () => {
   console.log('Checking for update...');
 });
 
 autoUpdater.on('update-available', (info) => {
   console.log('Update available:', info);
-  const dialogOpts = {
+  dialog.showMessageBox({
     type: 'info',
     buttons: ['Ok'],
     title: 'Application Update',
     message: 'A new version is available!',
-    detail: 'A new version is being downloaded now.'
-  };
-  dialog.showMessageBox(dialogOpts);
+    detail: 'Downloading update...',
+  });
 });
 
 autoUpdater.on('update-not-available', (info) => {
@@ -82,34 +123,58 @@ autoUpdater.on('error', (err) => {
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
-  console.log(`Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}%`);
+  console.log(
+    `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}%`
+  );
 });
 
 autoUpdater.on('update-downloaded', (info) => {
   console.log('Update downloaded');
-  // Show notification that update is ready
-  const dialogOpts = {
-    type: 'info',
-    buttons: ['Restart', 'Later'],
-    title: 'Application Update',
-    message: 'A new version has been downloaded',
-    detail: 'Restart the application to apply the updates'
-  };
-
-  dialog.showMessageBox(dialogOpts).then((returnValue) => {
-    if (returnValue.response === 0) autoUpdater.quitAndInstall();
-  });
+  dialog
+    .showMessageBox({
+      type: 'info',
+      buttons: ['Restart', 'Later'],
+      title: 'Application Update',
+      message: 'Update Ready',
+      detail: 'Restart the app to apply the update.',
+    })
+    .then((returnValue) => {
+      if (returnValue.response === 0) autoUpdater.quitAndInstall();
+    });
 });
 
 app.on('ready', () => {
-  createWindow();
+  createMainWindow();
   autoUpdater.checkForUpdatesAndNotify();
+
+  // After short delay (to allow splash/update check), show login
+  setTimeout(() => {
+    const isLoggedIn = false; // TODO: Replace with actual login state check
+    if (!isLoggedIn) {
+      showLoginWindow();
+    } else {
+      // If already logged in, load main app directly
+      mainWindow.loadURL(
+        url.format({
+          pathname: path.join(__dirname, 'dist/electron-template/browser/index.html'),
+          protocol: 'file:',
+          slashes: true,
+        })
+      );
+    }
+  }, 1500);
 });
 
-app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit();
+
+app.on('activate', () => {
+  if (mainWindow === null) {
+    createMainWindow();
+  }
 });
 
-app.on('activate', function () {
-  if (mainWindow === null) createWindow();
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
 });
