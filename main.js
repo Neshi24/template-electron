@@ -9,7 +9,17 @@ let loginWindow;
 autoUpdater.logger = require('electron-log');
 autoUpdater.logger.transports.file.level = 'debug';
 
-//Create the main window
+// Broadcast update status to splash and login window (if open)
+function broadcastUpdateStatus(msg) {
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send('update-status', msg);
+  }
+  if (loginWindow && loginWindow.webContents) {
+    loginWindow.webContents.send('update-status', msg);
+  }
+}
+
+// Create the main window
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
@@ -22,7 +32,7 @@ function createMainWindow() {
 
   mainWindow.setMenu(null);
 
-  //show a blank splash page
+  // Load splash screen
   mainWindow.loadURL(
     url.format({
       pathname: path.join(__dirname, 'splash.html'),
@@ -61,10 +71,9 @@ function showLoginWindow() {
     resizable: false,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
-    }
+      contextIsolation: false,
+    },
   });
-
 
   loginWindow.setMenu(null);
 
@@ -81,55 +90,81 @@ function showLoginWindow() {
   });
 }
 
-//On login success — close login modal, load Angular app
+// Check login status and load login or main app
+function checkLoginAndShowWindow() {
+  console.log('checkLoginAndShowWindow triggered');
+  const isLoggedIn = false; // TODO
+  if (!isLoggedIn) {
+    console.log('Not logged in, showing login modal...');
+    showLoginWindow();
+  } else {
+    console.log('Already logged in, loading main app...');
+    mainWindow.loadURL(
+      url.format({
+        pathname: path.join(__dirname, 'dist/electron-template/browser/index.html'),
+        protocol: 'file:',
+        slashes: true,
+      })
+    );
+  }
+}
+
+// Handle login success
 ipcMain.on('login-success', () => {
   if (loginWindow) {
     loginWindow.close();
   }
 
-  // Now load the Angular app into the main window
   mainWindow.loadURL(
     url.format({
       pathname: path.join(__dirname, 'dist/electron-template/browser/index.html'),
       protocol: 'file:',
-      slashes: true
+      slashes: true,
     })
   );
-
 });
 
-//Auto-updater hooks
+// Auto-updater events
 autoUpdater.on('checking-for-update', () => {
   console.log('Checking for update...');
+  broadcastUpdateStatus('Checking for updates...');
 });
 
 autoUpdater.on('update-available', (info) => {
   console.log('Update available:', info);
+  broadcastUpdateStatus('Update available. Downloading...');
   dialog.showMessageBox({
     type: 'info',
     buttons: ['Ok'],
     title: 'Application Update',
     message: 'A new version is available!',
     detail: 'Downloading update...',
+  }).then(() => {
+    checkLoginAndShowWindow();
   });
 });
 
 autoUpdater.on('update-not-available', (info) => {
   console.log('Update not available:', info);
+  broadcastUpdateStatus('You have the latest version.');
+  checkLoginAndShowWindow();
 });
 
 autoUpdater.on('error', (err) => {
   console.log('Error in auto-updater:', err);
+  broadcastUpdateStatus('Update check failed. Continuing...');
+  checkLoginAndShowWindow();
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
-  console.log(
-    `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${progressObj.percent}%`
-  );
+  const progressMsg = `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${Math.round(progressObj.percent)}%`;
+  console.log(progressMsg);
+  broadcastUpdateStatus(progressMsg);
 });
 
 autoUpdater.on('update-downloaded', (info) => {
   console.log('Update downloaded');
+  broadcastUpdateStatus('Update downloaded. Ready to install.');
   dialog
     .showMessageBox({
       type: 'info',
@@ -143,35 +178,25 @@ autoUpdater.on('update-downloaded', (info) => {
     });
 });
 
+// App ready
 app.on('ready', () => {
   createMainWindow();
   autoUpdater.checkForUpdatesAndNotify();
 
-  // After short delay (to allow splash/update check), show login
   setTimeout(() => {
-    const isLoggedIn = false; // TODO: Replace with actual login state check
-    if (!isLoggedIn) {
-      showLoginWindow();
-    } else {
-      // If already logged in, load main app directly
-      mainWindow.loadURL(
-        url.format({
-          pathname: path.join(__dirname, 'dist/electron-template/browser/index.html'),
-          protocol: 'file:',
-          slashes: true,
-        })
-      );
+    if (!loginWindow) {
+      console.log('Fallback: update check timeout, showing login window.');
+      broadcastUpdateStatus('Update check timeout. Proceeding to login...');
+      checkLoginAndShowWindow();
     }
-  }, 1500);
+  }, 5000);
 });
-
 
 app.on('activate', () => {
   if (mainWindow === null) {
     createMainWindow();
   }
 });
-
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
