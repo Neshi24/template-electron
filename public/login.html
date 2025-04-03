@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><title>Login</title></head>
+<head>
+  <meta charset="UTF-8" />
+  <title>Login</title>
+</head>
 <body>
 <h2>Login</h2>
 <button id="loginBtn">Login</button>
@@ -9,6 +12,7 @@
   const { ipcRenderer } = require('electron');
 
   document.getElementById('loginBtn').addEventListener('click', () => {
+    console.log("Sending login-success");
     ipcRenderer.send('login-success');
   });
 </script>
