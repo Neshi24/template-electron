@@ -20,11 +20,21 @@ function createWindow () {
 
   mainWindow.loadURL(
     url.format({
-      pathname: path.join(__dirname, `/dist/electron-template/browser/index.html`),
-      protocol: "file:",
+      pathname: path.join(__dirname, 'dist/electron-template/browser/index.html'),
+      protocol: 'file:',
       slashes: true
     })
   );
+
+
+  const { ipcMain } = require('electron');
+
+  ipcMain.on('login-success', () => {
+    mainWindow.loadURL(
+      this.router.navigate(['/main'])
+  );
+  });
+
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     const child = new BrowserWindow({
