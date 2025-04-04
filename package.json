@@ -1,6 +1,6 @@
 {
   "name": "electron-template",
-  "version": "1.0.7",
+  "version": "1.0.9",
   "main": "main.js",
   "scripts": {
     "ng": "ng",
@@ -56,13 +56,27 @@
       "package.json"
     ],
     "mac": {
-      "target": ["zip"]
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["arm64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["arm64"]
+        }
+      ]
     },
+
     "publish": [
       {
-        "provider": "generic",
-        "url": "https://electron-template1.surge.sh/"
+        "provider": "github",
+        "owner": "Neshi24",
+        "repo": "template-electron"
       }
     ]
   }
 }
+
