@@ -8,7 +8,8 @@ let loginWindow;
 let splashWindow;
 let updateTimeout;
 
-const isLiteMode = process.argv.includes('--lite');
+const isLiteMode = true;
+
 
 autoUpdater.logger = require('electron-log');
 autoUpdater.logger.transports.file.level = 'debug';

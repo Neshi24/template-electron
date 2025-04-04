@@ -9,7 +9,9 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "electron": "ng build --base-href ./ && electron .",
-    "dist": "ng build --base-href ./ && electron-builder"
+    "electron:lite": "ng build --base-href ./ && electron . --lite",
+    "dist": "ng build --base-href ./ && electron-builder",
+    "dist:lite": "ng build --base-href ./ && electron-builder --config electron-builder-lite.json"
   },
   "private": true,
   "dependencies": {
@@ -69,7 +71,9 @@
         }
       ]
     },
-
+    "win": {
+      "target": "nsis"
+    },
     "publish": [
       {
         "provider": "github",

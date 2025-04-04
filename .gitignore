@@ -10,6 +10,7 @@
 /out-tsc
 /bazel-out
 /release
+/release-lite
 *.exe
 # Node
 /node_modules

@@ -1,0 +1,39 @@
+{
+  "appId": "com.electron.template.lite",
+  "productName": "ElectronTemplateLite",
+  "directories": {
+    "output": "release-lite"
+  },
+  "files": [
+    "dist/**/*",
+    "main-lite.js",
+    "package.json"
+  ],
+  "mac": {
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "target": [
+      {
+        "target": "dmg",
+        "arch": ["arm64"]
+      },
+      {
+        "target": "zip",
+        "arch": ["arm64"]
+      }
+    ]
+  },
+  "win": {
+    "target": "nsis"
+  },
+  "extraMetadata": {
+    "main": "main-lite.js"
+  },
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "Neshi24",
+      "repo": "template-electron"
+    }
+  ]
+}

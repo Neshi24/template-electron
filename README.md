@@ -4,30 +4,51 @@ This repository provides a template for building Electron applications using Ang
 
 ## Getting Started
 
-1.  **Clone the repository:**
+1. **Clone the repository:**
     ```bash
     git clone https://github.com/Kathurjan/template-electron.git
     cd template-electron
     ```
-2.  **Install dependencies:**
+
+2. **Install dependencies:**
     ```bash
     npm install
     ```
-3.  **Run the Angular development server:**
+
+3. **Run the Angular development server:**
     ```bash
     npm start
     ```
     This will launch the Angular application in your browser.
-4.  **Run Electron (in a separate terminal):**
+
+
+4. **Run Electron (in a separate terminal):**  
+    a. Run with login window:
     ```bash
     npm run electron
     ```
-    This will build the Angular app and open the Electron application window.
-5.  **Building the application for distribution:**
+    This will build the Angular app and open the Electron application.
+
+    b. Run in lite mode (no login window):
+    ```bash
+    npm run electron:lite
+    ```
+    This will build the Angular app and open the Electron application in lite mode.
+
+ 
+5. **Build the application for distribution:**  
+    a. Standard build:
     ```bash
     npm run dist
     ```
     This will build the Angular app and create distributable packages in the `release` directory.
+
+    b. Lite mode build:
+    ```bash
+    npm run dist:lite
+    ```
+    This will build the Angular app and create lite mode version of distributable packages in the `release-lite` directory.
+
 
 
 
@@ -38,7 +59,7 @@ This template is configured for auto-updates using `electron-updater` and a gene
 **How it Works:**
 
 1.  **Publishing Updates:**
-    * When you run `npm run dist`, `electron-builder` creates your application's distributable (`.exe` for Windows) and generates `latest.yml` and blockmap files in the `release` directory.
+    * When you run `npm run dist`, `electron-builder` creates your application's distributable (`.exe` for Windows, `.dmg` for MacOS) and generates `latest.yml` and blockmap files in the `release` directory.
     * These files are then uploaded to the specified `url` in the `publish` section of your `package.json` (currently `https://electron-template.surge.sh/`).
     * The `latest.yml` file contains metadata about the latest release, and the blockmap files help with efficient delta updates.
 
