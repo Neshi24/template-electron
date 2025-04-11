@@ -14,11 +14,5 @@ export class LoginComponent {
     this.router.navigate(['/main']);
   }
 
-  ngOnInit() {
-    setTimeout(() => {
-      // simulate delay
-    }, 2000);
-  }
-
 
 }

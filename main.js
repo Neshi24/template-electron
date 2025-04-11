@@ -8,8 +8,7 @@ let loginWindow;
 let splashWindow;
 let updateTimeout;
 
-const isLiteMode = process.argv.includes('--lite');
-
+// Configure autoUpdater logging
 autoUpdater.logger = require('electron-log');
 autoUpdater.logger.transports.file.level = 'debug';
 
@@ -18,6 +17,7 @@ const log = require('electron-log');
 log.info('App is starting up');
 console.log('Log file location:', log.transports.file.getFile().path);
 
+//Broadcasts update status messages to both the main and login windows (if open).
 function broadcastUpdateStatus(msg) {
   if (mainWindow && mainWindow.webContents) {
     mainWindow.webContents.send('update-status', msg);
@@ -27,6 +27,7 @@ function broadcastUpdateStatus(msg) {
   }
 }
 
+//Creates the main application window.
 function createMainWindow() {
   mainWindow = new BrowserWindow({
     width: 1000,
@@ -39,20 +40,12 @@ function createMainWindow() {
   });
 
   mainWindow.setMenu(null);
-
-  mainWindow.loadURL(
-    url.format({
-      pathname: path.join(__dirname, 'blank.html'),
-      protocol: 'file:',
-      slashes: true,
-    })
-  );
-
   mainWindow.on('closed', function () {
     mainWindow = null;
   });
 }
 
+//Creates and displays the splash screen shown during updates.
 function createSplashWindow() {
   splashWindow = new BrowserWindow({
     width: 400,
@@ -81,6 +74,7 @@ function createSplashWindow() {
   });
 }
 
+//Shows the login window if the user is not logged in.
 function showLoginWindow() {
   loginWindow = new BrowserWindow({
     width: 400,
@@ -108,8 +102,9 @@ function showLoginWindow() {
   });
 }
 
+//Determines whether the user is logged in and opens the appropriate window.
 function checkLoginAndShowWindow() {
-  console.log('checkLoginAndShowWindow triggered');
+  log.info('checkLoginAndShowWindow triggered');
   const isLoggedIn = false; // TODO: Replace with real login check
 
   if (splashWindow) {
@@ -118,10 +113,10 @@ function checkLoginAndShowWindow() {
   }
 
   if (!isLoggedIn) {
-    console.log('Not logged in, showing login modal...');
+    log.info('Not logged in, showing login modal...');
     showLoginWindow();
   } else {
-    console.log('Already logged in, loading app...');
+    log.info('Already logged in, loading app...');
     mainWindow.loadURL(
       url.format({
         pathname: path.join(__dirname, 'dist/electron-template/browser/index.html'),
@@ -133,6 +128,7 @@ function checkLoginAndShowWindow() {
   }
 }
 
+// Listen for login success event
 ipcMain.on('login-success', () => {
   if (loginWindow) {
     loginWindow.close();
@@ -152,15 +148,15 @@ ipcMain.on('login-success', () => {
   mainWindow.show();
 });
 
-// Auto-updater events
+// Auto-updater event handlers
 autoUpdater.on('checking-for-update', () => {
-  console.log('Checking for update...');
+  log.info('Checking for update...');
   broadcastUpdateStatus('Checking for updates...');
 });
 
 autoUpdater.on('update-available', (info) => {
   clearTimeout(updateTimeout);
-  console.log('Update available:', info);
+  log.info('Update available:', info);
   broadcastUpdateStatus('Update available. Downloading...');
   dialog.showMessageBox({
     type: 'info',
@@ -173,52 +169,26 @@ autoUpdater.on('update-available', (info) => {
 
 autoUpdater.on('update-not-available', (info) => {
   clearTimeout(updateTimeout);
-  console.log('Update not available:', info);
+  log.info('Update not available:', info);
   broadcastUpdateStatus('You have the latest version.');
-
-  if (isLiteMode) {
-    createMainWindow();
-    mainWindow.loadURL(
-      url.format({
-        pathname: path.join(__dirname, 'dist/electron-template/browser/index.html'),
-        protocol: 'file:',
-        slashes: true,
-      })
-    );
-    mainWindow.show();
-  } else {
-    checkLoginAndShowWindow();
-  }
+  checkLoginAndShowWindow();
 });
 
 autoUpdater.on('error', (err) => {
   clearTimeout(updateTimeout);
-  console.log('Error in auto-updater:', err);
+  log.error('Error in auto-updater:', err);
   broadcastUpdateStatus('Update check failed. Continuing...');
-
-  if (isLiteMode) {
-    createMainWindow();
-    mainWindow.loadURL(
-      url.format({
-        pathname: path.join(__dirname, 'dist/electron-template/browser/index.html'),
-        protocol: 'file:',
-        slashes: true,
-      })
-    );
-    mainWindow.show();
-  } else {
-    checkLoginAndShowWindow();
-  }
+  checkLoginAndShowWindow();
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
   const progressMsg = `Download speed: ${progressObj.bytesPerSecond} - Downloaded ${Math.round(progressObj.percent)}%`;
-  console.log(progressMsg);
+  log.info(progressMsg);
   broadcastUpdateStatus(progressMsg);
 });
 
 autoUpdater.on('update-downloaded', (info) => {
-  console.log('Update downloaded');
+  log.info('Update downloaded');
   broadcastUpdateStatus('Update downloaded. Ready to install.');
 
   dialog
@@ -230,61 +200,36 @@ autoUpdater.on('update-downloaded', (info) => {
       detail: 'Restart the app to apply the update.',
     })
     .then((returnValue) => {
-      if (returnValue.response === 0) autoUpdater.quitAndInstall();
-      else {
-        if (isLiteMode) {
-          createMainWindow();
-          mainWindow.loadURL(
-            url.format({
-              pathname: path.join(__dirname, 'dist/electron-template/browser/index.html'),
-              protocol: 'file:',
-              slashes: true,
-            })
-          );
-          mainWindow.show();
-        } else {
-          checkLoginAndShowWindow();
-        }
+      if (returnValue.response === 0) {
+        autoUpdater.quitAndInstall();
+      } else {
+        checkLoginAndShowWindow();
       }
     });
 });
 
-// App ready
+// Event: App is ready. Show splash screen and start checking for updates.
 app.on('ready', () => {
-  if (isLiteMode) {
-    autoUpdater.checkForUpdatesAndNotify();
+  createSplashWindow();
+  autoUpdater.checkForUpdatesAndNotify();
 
-    updateTimeout = setTimeout(() => {
-      createMainWindow();
-      mainWindow.loadURL(
-        url.format({
-          pathname: path.join(__dirname, 'dist/electron-template/browser/index.html'),
-          protocol: 'file:',
-          slashes: true,
-        })
-      );
-      mainWindow.show();
-    }, 3000);
-  } else {
-    createSplashWindow();
-    autoUpdater.checkForUpdatesAndNotify();
-
-    updateTimeout = setTimeout(() => {
-      if (splashWindow) {
-        broadcastUpdateStatus('Update timeout. Proceeding...');
-        splashWindow.close();
-        checkLoginAndShowWindow();
-      }
-    }, 5000);
-  }
+  updateTimeout = setTimeout(() => {
+    if (splashWindow) {
+      broadcastUpdateStatus('Update timeout. Proceeding...');
+      splashWindow.close();
+      checkLoginAndShowWindow();
+    }
+  }, 1500);
 });
 
+// macOS-specific behavior: Recreate window if app is reactivated
 app.on('activate', () => {
   if (mainWindow === null) {
     createMainWindow();
   }
 });
 
+// Close the app when all windows are closed (default behavior for most OS)
 app.on('window-all-closed', () => {
   app.quit();
 });

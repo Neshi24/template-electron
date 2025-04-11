@@ -1,6 +1,6 @@
 {
   "name": "electron-template",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "main": "main.js",
   "scripts": {
     "ng": "ng",
@@ -8,8 +8,8 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "electron": "ng build --base-href ./ && electron .",
-    "electron:lite": "ng build --base-href ./ && electron . --lite",
+    "electron": "ng build --base-href ./ && node launch.js",
+    "electron:lite": "ng build --base-href ./ && node launch.js --lite",
     "dist": "ng build --base-href ./ && electron-builder",
     "dist:lite": "ng build --base-href ./ && electron-builder --config electron-builder-lite.json"
   },

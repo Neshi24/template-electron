@@ -4,9 +4,12 @@ const url = require('url');
 const path = require('path');
 
 let mainWindow;
+
+// Set up logging for auto-updater
 autoUpdater.logger = require("electron-log");
 autoUpdater.logger.transports.file.level = "debug";
 
+//Creates the main application window and sets up child window behavior.
 function createWindow () {
   mainWindow = new BrowserWindow({
     width: 800,
@@ -18,6 +21,7 @@ function createWindow () {
 
   mainWindow.setMenu(null);
 
+  // Load the main HTML file into the window
   mainWindow.loadURL(
     url.format({
       pathname: path.join(__dirname, `/dist/electron-template/browser/index.html`),
@@ -26,6 +30,10 @@ function createWindow () {
     })
   );
 
+  /**
+   * Handle any new windows triggered by the loaded content
+   * Opens them as child windows, but prevents default behavior
+   */
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     const child = new BrowserWindow({
       parent: mainWindow,
@@ -91,17 +99,13 @@ autoUpdater.on('update-downloaded', (info) => {
   });
 });
 
+// Called when Electron has finished initialization
 app.on('ready', () => {
   createWindow();
   autoUpdater.checkForUpdatesAndNotify();
 });
 
-app.on('activate', () => {
-  if (mainWindow === null) {
-    createMainWindow();
-  }
-});
-
+// macOS: recreate window if app is re-activated and no window is open
 app.on('activate', function () {
   if (mainWindow === null) createWindow();
 });

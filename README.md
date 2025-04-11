@@ -59,32 +59,33 @@ This template is configured for auto-updates using `electron-updater` and a gene
 **How it Works:**
 
 1.  **Publishing Updates:**
-    * When you run `npm run dist`, `electron-builder` creates your application's distributable (`.exe` for Windows, `.dmg` for MacOS) and generates `latest.yml` and blockmap files in the `release` directory.
-    * These files are then uploaded to the specified `url` in the `publish` section of your `package.json` (currently `https://electron-template.surge.sh/`).
-    * The `latest.yml` file contains metadata about the latest release, and the blockmap files help with efficient delta updates.
+    * When you run `npm run dist`, `electron-builder` creates your application's distributable (`.exe` for Windows, `.dmg` for MacOS) and generates `latest.yml` or `latest-mac.yml` and blockmap files in the `release` directory.
+    * These files are then uploaded to the specified `url` in the `publish` section of your `package.json` (currently `https://github.com/Neshi24/template-electron`).
+    * The `latest.yml` or `latest-mac.yml` file contains metadata about the latest release, and the blockmap files help with efficient delta updates.
 
 2.  **Client-Side Update Check:**
-    * The application, upon launch, checks for updates by fetching the `latest.yml` file from the specified URL.
+    * The application, upon launch, checks for updates by fetching the `latest.yml` or `latest-mac.yml` file from the specified URL.
     * If a new version is available, it downloads the update and prompts the user to install it.
 
 **Setting Up Auto-Updates for Your Own Project:**
 
 1.  **Choose a Hosting Provider:**
-    * You need a web server or hosting service to host your update files (`.exe`, `latest.yml`, blockmaps). You can use services like GitHub Releases, AWS S3, or any web server.
-    * If you want to use Surge.sh like in the template, you will first need to install it with `npm install -g surge`.
+    * You need a web server or hosting service to host your update files (`.exe`, `latest.yml`, blockmaps or `.dmg`, `latest-mac.yml`, blockmaps). You can use services like GitHub Releases, AWS S3, or any web server.
 
 2.  **Update `package.json`:**
     * Modify the `publish` section in your `package.json` to point to your hosting URL.
         ```json
         "publish": [
-          {
-            "provider": "generic",
-            "url": "https://electron-template.surge.sh/" <--- change this to what you are hosting your files on.
-          }
-        ]
+            { 
+              "provider": "github",   <--- change this to what you are hosting your files on.
+              "owner": "your username",
+              "repo": "your repository name"
+            }
+          ]
         ```
 
 3.  **Upload Update Files:**
-    * After building your application, upload the generated `.exe`, `latest.yml`, and blockmap files to your hosting location.
-    * For Surge.sh, after installing it, you would navigate to your root folder of where "release" is in, "surge ./release electron-template.surge.sh" and follow the prompts
+    * After building your application, upload the generated `.exe`, `latest.yml`, and blockmap or `.dmg`, `latest-mac.yml`, blockmaps files to your hosting location.
+    * For GitHub, create a new release for you repository and upload files there.
 
+            
